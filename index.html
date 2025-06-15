@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Mr Smile Secure Login</title>
+  <style>
+    * {
+      margin: 0; padding: 0; box-sizing: border-box;
+      font-family: 'Courier New', Courier, monospace;
+    }
+    body {
+      background-color: black;
+      color: #00f;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    video#bg-video {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      object-fit: cover;
+      z-index: -999;
+    }
+    .overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: -998;
+    }
+    #preloader {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      transition: opacity 0.5s ease;
+    }
+    .loader {
+      width: 150px; height: 150px;
+      border: 10px solid #00f;
+      border-top: 10px solid transparent;
+      border-radius: 50%;
+      animation: spin 2s linear infinite, neonPulse 2.5s ease-in-out infinite;
+      margin-bottom: 2rem;
+      box-shadow: 0 0 25px #00f;
+      position: relative;
+    }
+    .loader::after {
+      content: "LOADING";
+      position: absolute;
+      color: #00f; font-weight: bold;
+      font-size: 1rem;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      font-family: 'Orbitron', monospace;
+      text-shadow: 0 0 8px #00f;
+    }
+    #log-container {
+      font-size: 1.1rem;
+      min-height: 1.3rem;
+    }
+    #loginBox {
+      display: none;
+      background: rgba(0, 0, 255, 0.1);
+      padding: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 0 15px #00f;
+      width: 300px;
+      text-align: center;
+    }
+    input, button {
+      width: 100%;
+      margin: 0.5rem 0;
+      padding: 0.6rem;
+      border-radius: 4px;
+    }
+    input {
+      background: black; border: 1px solid #00f; color: #00f;
+    }
+    button {
+      background: #00f; color: black;
+      font-weight: bold; border: none; cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover { background: #55f; }
+    #error {
+      display: none;
+      color: red;
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    @keyframes neonPulse {
+      0%, 100% { box-shadow: 0 0 15px #00f; }
+      50% { box-shadow: 0 0 35px #00f; }
+    }
+    #hackerBtn {
+      display: none;
+      position: absolute;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 1rem 2rem;
+      font-size: 1.2rem;
+      background: #00f;
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 0 20px #00f;
+      z-index: 2;
+    }
+    #logoutBtn {
+      display: none;
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.9rem;
+      background: red;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      z-index: 10;
+    }
+    .popup {
+      display: none;
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      border: 2px solid #00f;
+      padding: 2rem;
+      color: #00f;
+      z-index: 1000;
+      text-align: center;
+      border-radius: 10px;
+      box-shadow: 0 0 15px #00f;
+    }
+    .popup button#continueBtn {
+      margin-top: 1rem;
+      padding: 0.8rem 2rem;
+      font-size: 1rem;
+      background: #00f;
+      color: black;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      box-shadow: 0 0 10px #00f;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Background Video -->
+  <video autoplay muted loop playsinline id="bg-video">
+    <source src="https://files.catbox.moe/dlxz5b.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+
+  <div class="overlay"></div>
+
+  <!-- Preloader -->
+  <div id="preloader">
+    <div class="loader"></div>
+    <div id="log-container"></div>
+  </div>
+
+  <!-- Login Form -->
+  <div id="loginBox">
+    <h2>Login</h2>
+    <form onsubmit="return validateForm()">
+      <input type="text" id="username" placeholder="Username" />
+      <input type="password" id="password" placeholder="Password" />
+      <button type="submit">Enter</button>
+      <div id="error">Username and Password required!</div>
+    </form>
+  </div>
+
+  <!-- Terminal -->
+  <div id="terminal" style="display:none; width:100%; height:100vh; padding:1rem; position:relative;">
+    <div style="position:absolute; top:0; left:0; width:100%; height:100%; background:black; opacity:0.6; z-index:-1;"></div>
+    <div id="terminalOutput" style="white-space:pre; line-height:1.4; font-size:0.95rem; padding-bottom:5rem;"></div>
+  </div>
+
+  <button id="hackerBtn" onclick="showWelcomePopup()">ENTER TO MR SMILE WEBSITE</button>
+  <button id="logoutBtn" onclick="logout()">Logout</button>
+
+  <!-- Popups -->
+  <div class="popup" id="successPopup">
+    <h2>✅ Login Successful!</h2>
+  </div>
+  <div class="popup" id="welcomePopup">
+    <h2>👋 Welcome to Mr Smile Web</h2>
+    <button id="continueBtn" onclick="goToJamesTech()">Continue to Mr Smile Web</button>
+  </div>
+
+  <script>
+    const logs = [
+      "Initializing Mr Smile secure protocols...",
+      "Establishing Mr Smile encrypted modules...",
+      "Verifying identity modules...",
+      "Decrypting system resources...",
+      "Finalizing Mr Smile interface...",
+      "Welcome to Mr Smile Web."
+    ];
+    const terminalLines = [
+      "AUTHENTICATION SUCCESSFUL...",
+      "WELCOME BACK,",
+      "BOOTING SYSTEM KERNEL...",
+      "CHECKING NETWORK INTERFACES...",
+      "STARTING ENCRYPTION MODULE...",
+      "CONNECTING TO CYBERCORE V4.1...",
+      "ACCESS GRANTED.",
+      "RUNNING ./main.sh",
+      "[SYSTEM READY] >>_"
+    ];
+
+    const preloader = document.getElementById("preloader");
+    const logContainer = document.getElementById("log-container");
+    const loginBox = document.getElementById("loginBox");
+    const terminal = document.getElementById("terminal");
+    const terminalOutput = document.getElementById("terminalOutput");
+
+    window.onload = () => {
+      if (localStorage.getItem("loggedIn") === "true") {
+        preloader.style.display = "none";
+        showTerminal();
+      } else {
+        nextLog();
+      }
+    };
+
+    let logIndex = 0;
+    function typeLogLine(line, callback) {
+      let i = 0;
+      const interval = setInterval(() => {
+        logContainer.textContent += line.charAt(i);
+        i++;
+        if (i >= line.length) {
+          clearInterval(interval);
+          setTimeout(callback, 500);
+        }
+      }, 50);
+    }
+
+    function nextLog() {
+      if (logIndex >= logs.length) {
+        setTimeout(() => {
+          preloader.style.display = "none";
+          loginBox.style.display = "block";
+        }, 500);
+        return;
+      }
+      typeLogLine(logs[logIndex], () => {
+        logIndex++;
+        logContainer.textContent = "";
+        nextLog();
+      });
+    }
+
+    function validateForm() {
+      const user = document.getElementById("username").value.trim();
+      const pass = document.getElementById("password").value.trim();
+      const err = document.getElementById("error");
+
+      if (!user || !pass || user !== "james" || pass !== "prem") {
+        err.style.display = "block";
+        return false;
+      }
+
+      err.style.display = "none";
+      loginBox.style.display = "none";
+      localStorage.setItem("loggedIn", "true");
+      document.getElementById("successPopup").style.display = "block";
+
+      setTimeout(() => {
+        document.getElementById("successPopup").style.display = "none";
+        showTerminal();
+      }, 1500);
+
+      return false;
+    }
+
+    function showTerminal() {
+      terminal.style.display = "block";
+      document.getElementById("logoutBtn").style.display = "block";
+      typeTerminalLine(0);
+    }
+
+    function typeTerminalLine(i) {
+      if (i >= terminalLines.length) {
+        setTimeout(() => {
+          document.getElementById("hackerBtn").style.display = "block";
+        }, 3000);
+        return;
+      }
+      let line = terminalLines[i];
+      let index = 0;
+      const div = document.createElement("div");
+      terminalOutput.appendChild(div);
+
+      function typeChar() {
+        if (index < line.length) {
+          div.textContent += line.charAt(index);
+          index++;
+          setTimeout(typeChar, 35);
+        } else {
+          setTimeout(() => typeTerminalLine(i + 1), 300);
+        }
+      }
+      typeChar();
+    }
+
+    function logout() {
+      localStorage.removeItem("loggedIn");
+      location.reload();
+    }
+
+    function showWelcomePopup() {
+      document.getElementById("welcomePopup").style.display = "block";
+    }
+
+    function goToMrSmileWeb() {
+      window.location.href = "index2.html";
+    }
+  </script>
+</body>
+</html>
